@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BookingForm } from './components/BookingForm'
 import { BookingTable } from './components/BookingTable'
 import { StatCards } from './components/StatCards'
+import { TodayBookings } from './components/TodayBookings'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 import {
@@ -86,12 +87,10 @@ export default function App() {
 
           <div className="flex items-center gap-3">
             {userEmail ? (
-              <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
-                <div className="text-right hidden xs:block">
-                  <div className="flex items-center justify-end gap-1 text-xs text-slate-500 font-medium">
-                    <span>로그인됨</span>
-                  </div>
-                  <p className="font-semibold text-xs sm:text-sm text-slate-800 truncate max-w-[140px] sm:max-w-[200px]">{userEmail}</p>
+              <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
+                <div className="text-right">
+                  <p className="text-xs text-slate-500 font-medium">로그인 계정</p>
+                  <p className="font-semibold text-sm text-slate-900">{userEmail}</p>
                 </div>
                 <button
                   onClick={handleLogout}
@@ -125,20 +124,8 @@ export default function App() {
             </div>
             <StatCards refreshKey={refreshKey} />
 
-            {/* 빠른 작업 */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 mb-1">빠른 작업</h3>
-                <p className="text-sm text-slate-500">새로운 예약을 등록해보세요.</p>
-              </div>
-              <button
-                onClick={() => setActiveTab('add')}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer shadow-blue-500/20 shrink-0"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>＋ 예약 추가하기</span>
-              </button>
-            </div>
+            {/* 오늘의 예약 현황 */}
+            <TodayBookings refreshKey={refreshKey} onAddClick={() => setActiveTab('add')} />
           </div>
         )}
 
