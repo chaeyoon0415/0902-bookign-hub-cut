@@ -36,18 +36,18 @@ export const StatCards = ({ refreshKey }: { refreshKey: number }) => {
       const rate = total > 0 ? (confirmed / total * 100).toFixed(1) : '0.0';
       setConfirmRate(parseFloat(rate));
 
-      // 이번 주 총 건수 (월-금)
+      // 이번 주 총 건수 (일-토)
       const now = new Date();
       const dayOfWeek = now.getDay();
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-      const friday = new Date(monday);
-      friday.setDate(monday.getDate() + 4);
+      const sunday = new Date(now);
+      sunday.setDate(now.getDate() - dayOfWeek);
+      const saturday = new Date(sunday);
+      saturday.setDate(sunday.getDate() + 6);
 
-      const mondayStr = monday.toISOString().split('T')[0];
-      const fridayStr = friday.toISOString().split('T')[0];
+      const sundayStr = sunday.toISOString().split('T')[0];
+      const saturdayStr = saturday.toISOString().split('T')[0];
 
-      const week_count = bookings.filter(b => b.date >= mondayStr && b.date <= fridayStr).length;
+      const week_count = bookings.filter(b => b.date >= sundayStr && b.date <= saturdayStr).length;
       setWeekCount(week_count);
     };
 
