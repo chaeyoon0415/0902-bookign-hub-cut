@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { Calendar, CheckCircle2, TrendingUp } from 'lucide-react';
 
 interface Booking {
   date: string;
@@ -54,21 +55,49 @@ export const StatCards = ({ refreshKey }: { refreshKey: number }) => {
   }, [refreshKey]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div className="bg-white p-6 rounded-lg shadow">
-        <div className="text-4xl font-bold text-blue-600">{todayCount}</div>
-        <div className="text-sm text-gray-600 mt-2">오늘 예약</div>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      {/* 오늘 예약 */}
+      <div className="bg-white p-5 rounded-xl border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">오늘 예약</span>
+          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+            <Calendar className="w-5 h-5" />
+          </div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <div className="text-3xl font-bold text-gray-900">{todayCount}</div>
+          <span className="text-xs text-gray-500 font-medium">건</span>
+        </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <div className="text-4xl font-bold text-purple-600">{confirmRate}%</div>
-        <div className="text-sm text-gray-600 mt-2">확정률</div>
+      {/* 확정률 */}
+      <div className="bg-white p-5 rounded-xl border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">확정률</span>
+          <div className="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </div>
+        <div className="flex items-baseline gap-1">
+          <div className="text-3xl font-bold text-gray-900">{confirmRate}</div>
+          <span className="text-xl font-bold text-gray-700">%</span>
+        </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <div className="text-4xl font-bold text-green-600">{weekCount}</div>
-        <div className="text-sm text-gray-600 mt-2">이번 주 총 건수</div>
+      {/* 이번 주 총 건수 */}
+      <div className="bg-white p-5 rounded-xl border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">이번 주 총 건수</span>
+          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <div className="text-3xl font-bold text-gray-900">{weekCount}</div>
+          <span className="text-xs text-gray-500 font-medium">건 (월~금)</span>
+        </div>
       </div>
     </div>
   );
 };
+

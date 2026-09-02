@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 
 export const LoginPage = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
-  const [loading, setLoading] = useState(false);
-
   useEffect(() => {
     const checkAuth = async () => {
       const {
