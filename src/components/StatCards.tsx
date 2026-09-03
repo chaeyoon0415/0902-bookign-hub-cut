@@ -94,7 +94,7 @@ export const StatCards = ({ refreshKey }: { refreshKey: number }) => {
         </div>
         <div className="flex items-baseline gap-2">
           <div className="text-3xl font-bold text-gray-900">{weekCount}</div>
-          <span className="text-xs text-gray-500 font-medium">건 (월~금)</span>
+          <span className="text-xs text-gray-500 font-medium">건</span>
         </div>
       </div>
     </div>
