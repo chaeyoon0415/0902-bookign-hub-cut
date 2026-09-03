@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { addEventToGoogleCalendar } from '../lib/googleCalendar';
 import { AddressMapPicker } from './AddressMapPicker';
 import { PlusCircle, Building2, Briefcase, Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -27,33 +28,50 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
 
     setLoading(true);
 
-    const { error: insertError } = await supabase
-      .from('bookings')
-      .insert([
-        {
+    try {
+      const { error: insertError } = await supabase
+        .from('bookings')
+        .insert([
+          {
+            customer,
+            service,
+            date,
+            time,
+            address,
+            status: 'pending',
+            via: 'form',
+          },
+        ]);
+
+      if (insertError) {
+        setError(`예약 추가 실패: ${insertError.message}`);
+        console.error('Error inserting booking:', insertError);
+        setLoading(false);
+        return;
+      }
+
+      // Google Calendar에 이벤트 추가
+      try {
+        await addEventToGoogleCalendar({
           customer,
           service,
           date,
           time,
           address,
-          status: 'pending',
-          via: 'form',
-        },
-      ]);
+        });
+      } catch (calendarError) {
+        console.warn('Google Calendar 추가 실패 (예약은 저장됨):', calendarError);
+      }
 
-    if (insertError) {
-      setError(`예약 추가 실패: ${insertError.message}`);
-      console.error('Error inserting booking:', insertError);
-    } else {
       setCustomer('');
       setService('');
       setDate('');
       setTime('');
       setAddress('');
       onSuccess();
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
