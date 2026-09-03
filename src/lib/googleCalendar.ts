@@ -10,36 +10,17 @@ interface CalendarEvent {
 
 export const addEventToGoogleCalendar = async (event: CalendarEvent) => {
   try {
-    const refreshToken = import.meta.env.VITE_GOOGLE_REFRESH_TOKEN;
+    const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
 
-    if (!refreshToken) {
-      console.warn('Google Calendar refresh token not found');
+    if (!accessToken) {
+      console.warn('Google Calendar access token not found');
       return null;
     }
 
-    // Refresh access token
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        client_secret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
-
-    if (!tokenResponse.ok) {
-      throw new Error('Failed to refresh Google access token');
-    }
-
-    const { access_token } = await tokenResponse.json();
-
     // Create calendar event
     const startDateTime = `${event.date}T${event.time}:00`;
-    const endDateTime = new Date(new Date(startDateTime).getTime() + 60 * 60000).toISOString();
+    const endTime = new Date(new Date(startDateTime).getTime() + 60 * 60000);
+    const endDateTime = endTime.toISOString().slice(0, 19);
 
     const eventBody = {
       summary: `${event.customer} - ${event.service}`,
@@ -50,7 +31,7 @@ export const addEventToGoogleCalendar = async (event: CalendarEvent) => {
         timeZone: 'Asia/Seoul',
       },
       end: {
-        dateTime: endDateTime.split('Z')[0],
+        dateTime: endDateTime,
         timeZone: 'Asia/Seoul',
       },
     };
@@ -59,16 +40,18 @@ export const addEventToGoogleCalendar = async (event: CalendarEvent) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(eventBody),
     });
 
     if (!calendarResponse.ok) {
-      throw new Error('Failed to add event to Google Calendar');
+      const errorData = await calendarResponse.json();
+      throw new Error(`Failed to add event to Google Calendar: ${errorData.error?.message || calendarResponse.statusText}`);
     }
 
     const result = await calendarResponse.json();
+    console.log('Event added to Google Calendar:', result);
     return result;
   } catch (error) {
     console.error('Error adding event to Google Calendar:', error);
