@@ -69,13 +69,13 @@ export const requestGoogleCalendarAccess = (): Promise<string> => {
       // prompt: 'consent' - 항상 동의 화면 표시
       tokenClient.requestAccessToken({ prompt: 'consent' });
 
-      // 타임아웃 설정 (10초)
+      // 타임아웃 설정 (30초)
       setTimeout(() => {
         if (tokenResolve) {
           tokenResolve = null;
           reject(new Error('Timeout waiting for access token - user may have cancelled'));
         }
-      }, 10000);
+      }, 30000);
     } catch (error) {
       console.error('Error requesting access token:', error);
       reject(error);
