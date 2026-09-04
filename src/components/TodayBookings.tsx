@@ -11,7 +11,7 @@ interface Booking {
   time: string;
 }
 
-const GRID_COLS = 'grid-cols-[15%_18%_18%_31%_18%]';
+const GRID_COLS = 'grid-cols-[25%_15%_15%_25%_20%]';
 
 export const TodayBookings = ({ refreshKey, onAddClick }: { refreshKey: number; onAddClick: () => void }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -90,8 +90,8 @@ export const TodayBookings = ({ refreshKey, onAddClick }: { refreshKey: number; 
           {/* 데이터 행 */}
           <div className="divide-y divide-slate-100">
             {bookings.map((booking) => (
-              <div key={booking.id} className={`grid ${GRID_COLS} gap-0 hover:bg-slate-50/50 transition-colors`} style={{ height: '74px' }}>
-                <div className="px-6 py-5 flex items-center text-slate-700 text-base font-medium whitespace-nowrap">
+              <div key={booking.id} className={`grid ${GRID_COLS} gap-0 hover:bg-slate-50/50 transition-colors`}>
+                <div className="px-6 py-5 flex items-center text-slate-700 text-sm font-medium break-words whitespace-pre-wrap">
                   {booking.time}
                 </div>
                 <div className="px-6 py-5 flex items-center text-slate-600 text-base truncate">
