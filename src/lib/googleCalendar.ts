@@ -95,7 +95,17 @@ export const addEventToGoogleCalendar = async (event: CalendarEvent) => {
       throw new Error('Google access token not available. Please login with Google first.');
     }
 
-    const startDateTime = `${event.date}T${event.time}:00`;
+    // 슬롯을 시간으로 변환 (첫 번째 슬롯만 사용)
+    const slotMap: Record<string, string> = {
+      '오전': '10:00',
+      '오후-1': '13:00',
+      '오후-2': '15:00',
+    };
+
+    const firstSlot = event.time.split(',')[0].trim();
+    const timeHHMM = slotMap[firstSlot] || '10:00';
+
+    const startDateTime = `${event.date}T${timeHHMM}`;
     const endTime = new Date(new Date(startDateTime).getTime() + 60 * 60000);
     const endDateTime = endTime.toISOString().slice(0, 19);
 
