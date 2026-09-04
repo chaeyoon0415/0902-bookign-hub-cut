@@ -36,9 +36,14 @@ export const BookingTable = ({ refreshKey }: { refreshKey: number }) => {
 
   const toggleStatus = async (id: number, currentStatus: string) => {
     const newStatus = currentStatus === 'pending' ? 'confirmed' : 'pending';
+    const newDecision = newStatus === 'confirmed' ? 'confirmed_human' : 'pending';
+
     const { error } = await supabase
       .from('bookings')
-      .update({ status: newStatus })
+      .update({
+        status: newStatus,
+        decision: newDecision,
+      })
       .eq('id', id);
 
     if (error) {
