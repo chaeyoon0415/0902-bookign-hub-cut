@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { MapPin, Clock, CheckCircle2, AlertCircle, Loader2, Inbox } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertCircle, Loader2, Inbox } from 'lucide-react';
 
 interface Booking {
   id: number;
@@ -79,9 +79,8 @@ export const BookingTable = ({ refreshKey }: { refreshKey: number }) => {
           <thead className="bg-gray-50/80 text-gray-600 font-semibold border-b border-gray-200/80 text-xs uppercase tracking-wider">
             <tr>
               <th className="py-3.5 px-4 font-semibold">고객사</th>
-              <th className="py-3.5 px-4 font-semibold">서비스</th>
+              <th className="py-3.5 px-4 font-semibold">메모/희망슬롯</th>
               <th className="py-3.5 px-4 font-semibold">날짜</th>
-              <th className="py-3.5 px-4 font-semibold">시간</th>
               <th className="py-3.5 px-4 font-semibold">주소</th>
               <th className="py-3.5 px-4 font-semibold text-center">상태</th>
             </tr>
@@ -90,18 +89,13 @@ export const BookingTable = ({ refreshKey }: { refreshKey: number }) => {
             {bookings.map((booking) => (
               <tr key={booking.id} className="hover:bg-gray-50/80 transition-colors">
                 <td className="py-3.5 px-4 font-semibold text-gray-900">{booking.customer}</td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
-                    {booking.service}
-                  </span>
+                <td className="py-3.5 px-4 text-gray-600">
+                  <div className="space-y-1">
+                    <p className="font-medium">{booking.service}</p>
+                    <p className="text-xs text-gray-500">{booking.time}</p>
+                  </div>
                 </td>
                 <td className="py-3.5 px-4 text-gray-600 whitespace-nowrap">{booking.date}</td>
-                <td className="py-3.5 px-4 text-gray-600 whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-gray-400" />
-                    {booking.time}
-                  </span>
-                </td>
                 <td className="py-3.5 px-4">
                   {booking.address ? (
                     <a

@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react'
 import { BookingForm } from './components/BookingForm'
 import { BookingTable } from './components/BookingTable'
-import { StatCards } from './components/StatCards'
 import { TodayBookings } from './components/TodayBookings'
+import { DecisionTable } from './components/DecisionTable'
+import { DashboardControls } from './components/DashboardControls'
+import { WorkflowGraph } from './components/WorkflowGraph'
+import { DecisionLog } from './components/DecisionLog'
+import { StatusBoard } from './components/StatusBoard'
 import { supabase } from './lib/supabase'
+import { initializeGoogleTokenClient } from './lib/googleCalendar'
 import type { Session } from '@supabase/supabase-js'
 import {
   LayoutDashboard,
@@ -16,6 +21,12 @@ import {
   CalendarDays
 } from 'lucide-react'
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
 type TabType = 'dashboard' | 'list' | 'add' | 'status' | 'location'
 
 export default function App() {
@@ -25,6 +36,17 @@ export default function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
   useEffect(() => {
+    // Load Google Identity Services script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      initializeGoogleTokenClient();
+    };
+    document.head.appendChild(script);
+
+    // Initialize Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Current session:', session)
       setSession(session)
@@ -39,7 +61,10 @@ export default function App() {
       setUserEmail(session?.user?.email || null)
     })
 
-    return () => subscription?.unsubscribe()
+    return () => {
+      subscription?.unsubscribe()
+      script.remove()
+    }
   }, [])
 
   const handleGoogleLogin = async () => {
@@ -66,7 +91,7 @@ export default function App() {
     { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
     { id: 'list', label: '예약목록', icon: ClipboardList },
     { id: 'add', label: '예약추가', icon: PlusCircle },
-    { id: 'status', label: '상태관리', icon: SlidersHorizontal },
+    { id: 'status', label: '미확정 관리', icon: SlidersHorizontal },
     { id: 'location', label: '위치확인', icon: MapPin },
   ]
 
@@ -120,12 +145,22 @@ export default function App() {
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-bold text-slate-900">현황 대시보드</h2>
-              <p className="text-xs text-slate-500">예약 지표 및 실시간 현황 요약입니다</p>
+              <p className="text-xs text-slate-500">판정 자동화 및 예약 상태 실시간 모니터링</p>
             </div>
-            <StatCards refreshKey={refreshKey} />
+
+            <DashboardControls onJudgeComplete={() => setRefreshKey(prev => prev + 1)} />
+
+            <WorkflowGraph />
+
+            <DecisionLog />
+
+            <StatusBoard />
 
             {/* 오늘의 예약 현황 */}
-            <TodayBookings refreshKey={refreshKey} onAddClick={() => setActiveTab('add')} />
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 mb-3">오늘의 예약</h3>
+              <TodayBookings refreshKey={refreshKey} onAddClick={() => setActiveTab('add')} />
+            </div>
           </div>
         )}
 
@@ -151,14 +186,14 @@ export default function App() {
           </div>
         )}
 
-        {/* 상태관리 탭 */}
+        {/* 미확정 관리 탭 */}
         {activeTab === 'status' && (
           <div className="space-y-6">
             <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">상태 관리</h2>
-              <p className="text-xs text-slate-500">예약의 상태 배지를 클릭하여 대기(pending) 또는 확정(confirmed)으로 변경하세요</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">미확정 관리</h2>
+              <p className="text-xs text-slate-500">대기/검토/거절/질문 상태의 예약을 확인하고 관리합니다</p>
             </div>
-            <BookingTable refreshKey={refreshKey} />
+            <DecisionTable refreshKey={refreshKey} onDecisionChange={() => setRefreshKey(prev => prev + 1)} />
           </div>
         )}
 

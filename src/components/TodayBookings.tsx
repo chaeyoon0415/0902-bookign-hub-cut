@@ -4,11 +4,11 @@ import { CheckCircle2, AlertCircle, PlusCircle, CalendarDays } from 'lucide-reac
 
 interface Booking {
   id: number;
-  time: string;
   customer: string;
   service: string;
   address: string;
   status: string;
+  time: string;
 }
 
 const GRID_COLS = 'grid-cols-[15%_18%_18%_31%_18%]';
@@ -24,7 +24,7 @@ export const TodayBookings = ({ refreshKey, onAddClick }: { refreshKey: number; 
 
       const { data, error } = await supabase
         .from('bookings')
-        .select('id, time, customer, service, address, status')
+        .select('id, customer, service, address, status, time')
         .eq('date', today)
         .order('time', { ascending: true });
 
@@ -82,7 +82,7 @@ export const TodayBookings = ({ refreshKey, onAddClick }: { refreshKey: number; 
           <div className={`grid ${GRID_COLS} gap-0 bg-slate-50/80 border-b border-slate-200/80`}>
             <div className="px-6 py-4 text-left font-bold text-slate-700 text-base">시간</div>
             <div className="px-6 py-4 text-left font-bold text-slate-700 text-base">고객사</div>
-            <div className="px-6 py-4 text-left font-bold text-slate-700 text-base">서비스</div>
+            <div className="px-6 py-4 text-left font-bold text-slate-700 text-base">메모</div>
             <div className="px-6 py-4 text-left font-bold text-slate-700 text-base">주소</div>
             <div className="px-6 py-4 text-left font-bold text-slate-700 text-base">상태</div>
           </div>

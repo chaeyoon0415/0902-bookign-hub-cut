@@ -1,74 +1,129 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { addEventToGoogleCalendar } from '../lib/googleCalendar';
+import { addEventToGoogleCalendar, requestGoogleCalendarAccess } from '../lib/googleCalendar';
 import { AddressMapPicker } from './AddressMapPicker';
-import { PlusCircle, Building2, Briefcase, Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Building2, Calendar, AlertCircle, Loader2 } from 'lucide-react';
 
 interface BookingFormProps {
   onSuccess: () => void;
 }
 
+const SLOT_OPTIONS = [
+  { id: 'morning', label: '오전 10-12' },
+  { id: 'afternoon1', label: '오후-1 13-15' },
+  { id: 'afternoon2', label: '오후-2 15-17' },
+];
+
 export const BookingForm = ({ onSuccess }: BookingFormProps) => {
   const [customer, setCustomer] = useState('');
-  const [service, setService] = useState('');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [kind, setKind] = useState('');
+  const [form, setForm] = useState('');
+  const [memo, setMemo] = useState('');
   const [address, setAddress] = useState('');
+  const [date, setDate] = useState('');
+  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleSlotToggle = (slotId: string) => {
+    setSelectedSlots((prev) => {
+      const isSelected = prev.includes(slotId);
+      if (isSelected) {
+        return prev.filter((s) => s !== slotId);
+      } else {
+        return [...prev, slotId];
+      }
+    });
+  };
+
+
+  const getSlotLabel = (slotId: string) => {
+    const slot = SLOT_OPTIONS.find((s) => s.id === slotId);
+    return slot?.label || '';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!customer || !service || !date || !time || !address) {
-      setError('모든 필드를 입력해주세요');
+    // 필드 유효성 검사
+    const missingFields: string[] = [];
+    if (!customer) missingFields.push('고객사');
+    if (!kind) missingFields.push('종류');
+    if (!form) missingFields.push('형태');
+    if (!date) missingFields.push('날짜');
+    if (selectedSlots.length === 0) missingFields.push('희망 슬롯');
+    if (form === '외근' && !address) missingFields.push('위치');
+
+    if (missingFields.length > 0) {
+      setError(`빈 칸: ${missingFields.join(', ')}`);
       return;
     }
 
     setLoading(true);
 
     try {
-      const { error: insertError } = await supabase
+      const slotsWantedString = selectedSlots.map(getSlotLabel).join(',');
+
+      console.log('Inserting booking:', {
+        customer,
+        kind,
+        service: memo,
+        address,
+        date,
+        time: slotsWantedString,
+      });
+
+      const { data, error: insertError } = await supabase
         .from('bookings')
         .insert([
           {
             customer,
-            service,
-            date,
-            time,
+            service: memo,
             address,
+            date,
+            time: slotsWantedString,
             status: 'pending',
             via: 'form',
           },
         ]);
 
       if (insertError) {
-        setError(`예약 추가 실패: ${insertError.message}`);
-        console.error('Error inserting booking:', insertError);
+        console.error('Supabase insert error:', insertError);
+        setError(`저장 실패: ${insertError.message}`);
         setLoading(false);
         return;
       }
 
-      // Google Calendar에 이벤트 추가
+      console.log('Booking inserted successfully:', data);
+
+      // Google Calendar는 optional이므로 실패해도 계속 진행
       try {
+        await requestGoogleCalendarAccess();
         await addEventToGoogleCalendar({
           customer,
-          service,
+          service: memo,
           date,
-          time,
+          time: '',
           address,
         });
+        console.log('Google Calendar에 예약이 추가되었습니다');
       } catch (calendarError) {
         console.warn('Google Calendar 추가 실패 (예약은 저장됨):', calendarError);
       }
 
+      // 성공
       setCustomer('');
-      setService('');
-      setDate('');
-      setTime('');
+      setKind('');
+      setForm('');
+      setMemo('');
       setAddress('');
+      setDate('');
+      setSelectedSlots([]);
       onSuccess();
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError(`예약 추가 중 오류 발생: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
     } finally {
       setLoading(false);
     }
@@ -109,17 +164,49 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">서비스</label>
-          <div className="relative">
-            <input
-              type="text"
-              value={service}
-              onChange={(e) => setService(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all bg-white"
-              placeholder="서비스 유형 입력"
-            />
-            <Briefcase className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-          </div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">종류</label>
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all bg-white"
+          >
+            <option value="">선택하세요</option>
+            <option value="서울">서울</option>
+            <option value="경기">경기</option>
+            <option value="지방">지방</option>
+            <option value="내부">내부</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">형태</label>
+          <select
+            value={form}
+            onChange={(e) => setForm(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all bg-white"
+          >
+            <option value="">선택하세요</option>
+            <option value="외근">외근</option>
+            <option value="온라인">온라인</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">메모</label>
+          <input
+            type="text"
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all bg-white"
+            placeholder="예: 미팅, 기획 회의"
+          />
+        </div>
+
+        <div className={form === '외근' ? '' : 'opacity-50 pointer-events-none'}>
+          <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">
+            위치 {form === '외근' && <span className="text-red-500">*</span>}
+          </label>
+          <AddressMapPicker address={address} onAddressChange={setAddress} />
         </div>
 
         <div>
@@ -134,23 +221,31 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
             <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
           </div>
         </div>
+      </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">시간</label>
-          <div className="relative">
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all bg-white"
-            />
-            <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-          </div>
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">주소</label>
-          <AddressMapPicker address={address} onAddressChange={setAddress} />
+      <div className="mb-6">
+        <label className="block text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wider">희망 슬롯 (체크 순서가 우선순위)</label>
+        <div className="space-y-2">
+          {SLOT_OPTIONS.map((slot) => {
+            const slotOrder = selectedSlots.indexOf(slot.id) + 1;
+            const isSelected = selectedSlots.includes(slot.id);
+            return (
+              <label key={slot.id} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => handleSlotToggle(slot.id)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20"
+                />
+                <span className="text-sm text-gray-700">{slot.label}</span>
+                {isSelected && (
+                  <span className="ml-auto inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 text-xs font-semibold rounded-full">
+                    {slotOrder}
+                  </span>
+                )}
+              </label>
+            );
+          })}
         </div>
       </div>
 

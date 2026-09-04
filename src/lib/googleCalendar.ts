@@ -8,16 +8,93 @@ interface CalendarEvent {
   address: string;
 }
 
-export const addEventToGoogleCalendar = async (event: CalendarEvent) => {
-  try {
-    const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
 
-    if (!accessToken) {
-      console.warn('Google Calendar access token not found');
-      return null;
+let accessToken: string | null = null;
+let tokenClient: any = null;
+let tokenResolve: ((token: string) => void) | null = null;
+
+export const initializeGoogleTokenClient = () => {
+  if (!window.google?.accounts?.oauth2) {
+    console.warn('Google Identity Services not loaded');
+    return;
+  }
+
+  tokenClient = window.google.accounts.oauth2.initTokenClient({
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/calendar',
+    callback: (tokenResponse: any) => {
+      console.log('Token callback received:', tokenResponse);
+      if (tokenResponse.access_token) {
+        const token = tokenResponse.access_token;
+        accessToken = token;
+        console.log('Google Calendar access token obtained:', token.substring(0, 20) + '...');
+        if (tokenResolve) {
+          tokenResolve(token);
+          tokenResolve = null;
+        }
+      }
+    },
+  });
+  console.log('Google Token Client initialized');
+};
+
+export const requestGoogleCalendarAccess = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!tokenClient) {
+      initializeGoogleTokenClient();
     }
 
-    // Create calendar event
+    if (!tokenClient) {
+      reject(new Error('Google token client not available'));
+      return;
+    }
+
+    // 이미 토큰이 있으면 바로 반환
+    if (accessToken) {
+      console.log('Using cached access token');
+      resolve(accessToken);
+      return;
+    }
+
+    // 토큰 응답을 기다릴 resolve 함수 설정
+    tokenResolve = resolve;
+
+    try {
+      console.log('Requesting access token...');
+      // prompt: 'consent' - 항상 동의 화면 표시
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+
+      // 타임아웃 설정 (10초)
+      setTimeout(() => {
+        if (tokenResolve) {
+          tokenResolve = null;
+          reject(new Error('Timeout waiting for access token - user may have cancelled'));
+        }
+      }, 10000);
+    } catch (error) {
+      console.error('Error requesting access token:', error);
+      reject(error);
+    }
+  });
+};
+
+export const setGoogleAccessToken = (token: string) => {
+  accessToken = token;
+};
+
+export const getGoogleAccessToken = (): string | null => accessToken;
+
+export const addEventToGoogleCalendar = async (event: CalendarEvent) => {
+  try {
+    if (!accessToken) {
+      throw new Error('Google access token not available. Please login with Google first.');
+    }
+
     const startDateTime = `${event.date}T${event.time}:00`;
     const endTime = new Date(new Date(startDateTime).getTime() + 60 * 60000);
     const endDateTime = endTime.toISOString().slice(0, 19);
