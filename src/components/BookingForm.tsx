@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { addEventToGoogleCalendar, requestGoogleCalendarAccess } from '../lib/googleCalendar';
 import { AddressMapPicker } from './AddressMapPicker';
 import { PlusCircle, Building2, Calendar, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -98,20 +97,8 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
 
       console.log('Booking inserted successfully:', data);
 
-      // Google Calendar는 optional이므로 실패해도 계속 진행
-      try {
-        await requestGoogleCalendarAccess();
-        await addEventToGoogleCalendar({
-          customer,
-          service: memo,
-          date,
-          time: '',
-          address,
-        });
-        console.log('Google Calendar에 예약이 추가되었습니다');
-      } catch (calendarError) {
-        console.warn('Google Calendar 추가 실패 (예약은 저장됨):', calendarError);
-      }
+      // 슬롯 모델에서는 정확한 시간이 없어서 Google Calendar 연동 제외
+      // (time은 "오전,오후-1" 형식의 슬롯 텍스트)
 
       // 성공
       setCustomer('');
