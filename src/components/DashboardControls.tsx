@@ -64,19 +64,13 @@ export const DashboardControls = ({ onJudgeComplete }: DashboardControlsProps) =
       for (const booking of bookings) {
         try {
           const result = decide(booking, allBookings, autoJudge);
-          const traceStr = result.trace.join('\n');
 
           const updateData: Record<string, any> = {
             decision: result.decision,
-            reason: result.reason,
-            candidate: result.candidate,
-            options: result.options,
-            trace: traceStr,
           };
 
-          // confirmed_auto이면 slot_assigned 설정 및 status 변경
-          if (result.decision === 'confirmed_auto' && result.candidate) {
-            updateData.slot_assigned = result.candidate;
+          // confirmed_auto이면 status 변경
+          if (result.decision === 'confirmed_auto') {
             updateData.status = 'confirmed';
           }
 
