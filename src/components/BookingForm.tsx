@@ -84,6 +84,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
             date,
             time: slotsWantedString,
             status: 'pending',
+            decision: 'pending',
             via: 'form',
           },
         ]);
